@@ -133,7 +133,7 @@ static int iface_get_bcast_addr(const char *iface, struct sockaddr_in *sa)
     struct ifaddrs *ifaddr, *ifa;
 
     if (getifaddrs(&ifaddr) == -1) {
-        fprintf(stderr, "Error getting interface addresses: %s\n", strerror(errno));
+        fprintf(stdout, "Error getting interface addresses: %s\n", strerror(errno));
         return 1;
     }
 
@@ -240,19 +240,19 @@ void onexit(void)
 
 static void usage(int rc)
 {
-    fprintf(stderr, "ps5-wake v%s Help\n", _VERSION);
-    fprintf(stderr, " Probe:\n");
-    fprintf(stderr, "  -P, --probe\n    Probe network for devices.\n");
-    fprintf(stderr, " Wake:\n");
-    fprintf(stderr, "  -W, --wake <user-credential>\n    Wake device using specified user credential.\n");
-    fprintf(stderr, " Options:\n");
-    fprintf(stderr, "  -B, --broadcast\n    Send broadcasts.\n");
-    fprintf(stderr, "  -L, --local-port <port address>\n    Specifiy a local port address.\n");
-    fprintf(stderr, "  -H, --remote-host <host address>\n    Specifiy a remote host address.\n");
-    fprintf(stderr, "  -R, --remote-port <port address>\n    Specifiy a remote port address (default: %d).\n", _DST_PORT);
-    fprintf(stderr, "  -I, --interface <interface>\n    Bind to interface.\n");
-    fprintf(stderr, "  -j, --json\n    Output JSON.\n");
-    fprintf(stderr, "  -v, --verbose\n    Enable verbose messages.\n");
+    fprintf(stdout, "ps5-wake v%s Help\n", _VERSION);
+    fprintf(stdout, " Probe:\n");
+    fprintf(stdout, "  -P, --probe\n    Probe network for devices.\n");
+    fprintf(stdout, " Wake:\n");
+    fprintf(stdout, "  -W, --wake <user-credential>\n    Wake device using specified user credential.\n");
+    fprintf(stdout, " Options:\n");
+    fprintf(stdout, "  -B, --broadcast\n    Send broadcasts.\n");
+    fprintf(stdout, "  -L, --local-port <port address>\n    Specifiy a local port address.\n");
+    fprintf(stdout, "  -H, --remote-host <host address>\n    Specifiy a remote host address.\n");
+    fprintf(stdout, "  -R, --remote-port <port address>\n    Specifiy a remote port address (default: %d).\n", _DST_PORT);
+    fprintf(stdout, "  -I, --interface <interface>\n    Bind to interface.\n");
+    fprintf(stdout, "  -j, --json\n    Output JSON.\n");
+    fprintf(stdout, "  -v, --verbose\n    Enable verbose messages.\n");
 
     exit(rc);
 }
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
             verbose = 1;
             break;
         case '?':
-            fprintf(stderr,
+            fprintf(stdout,
                 "Try %s --help for more information.\n", argv[0]);
             return _EXIT_BADOPTION;
         case 'h':
@@ -330,17 +330,17 @@ int main(int argc, char *argv[])
     }
 
     if (cred == NULL && !probe) {
-        fprintf(stderr, "A user credential is required.\n");
+        fprintf(stdout, "A user credential is required.\n");
         return _EXIT_NOUSERCRED;
     }
 
     if (!broadcast && host_remote == NULL) {
-        fprintf(stderr, "Either broadcast or remote host is required.\n");
+        fprintf(stdout, "Either broadcast or remote host is required.\n");
         return _EXIT_NOHOSTADDR;
     }
 
     if (broadcast && host_remote != NULL) {
-        fprintf(stderr, "Broadcast and remote host can not both be set.\n");
+        fprintf(stdout, "Broadcast and remote host can not both be set.\n");
         return _EXIT_BADHOSTADDR;
     }
 
@@ -355,12 +355,12 @@ int main(int argc, char *argv[])
     sa_remote.sin_family = AF_INET;
 
     if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
+        fprintf(stdout, "Error creating socket: %s\n", strerror(errno));
         return _EXIT_SOCKET;
     }
 
     if (bind(sd, (struct sockaddr *)&sa_local, sizeof(struct sockaddr_in)) == -1) {
-        fprintf(stderr, "Error binding socket: %s\n", strerror(errno));
+        fprintf(stdout, "Error binding socket: %s\n", strerror(errno));
         return _EXIT_SOCKET;
     }
 
@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
         int enable = 1;
         if ((setsockopt(sd,
             SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable))) == -1) {
-            fprintf(stderr, "Error enabling broadcasts: %s\n", strerror(errno));
+            fprintf(stdout, "Error enabling broadcasts: %s\n", strerror(errno));
             return _EXIT_SOCKET;
         }
     }
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
         hints.ai_family = sa_remote.sin_family;
 
         if ((rc = getaddrinfo(host_remote, NULL, &hints, &result)) != 0) {
-            fprintf(stderr, "Error resolving remote address: %s: %s\n",
+            fprintf(stdout, "Error resolving remote address: %s: %s\n",
                 host_remote, gai_strerror(rc));
             return _EXIT_HOSTNOTFOUND;
         }
@@ -404,7 +404,7 @@ int main(int argc, char *argv[])
 
     if (setsockopt(sd,
         SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)) == -1) {
-        fprintf(stderr, "Error setting socket read time-out: %s\n", strerror(errno));
+        fprintf(stdout, "Error setting socket read time-out: %s\n", strerror(errno));
         return _EXIT_SOCKET;
     }
 
@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
     ssize_t bytes;
     socklen_t sock_size;
 
-    if (verbose) fprintf(stderr, "Scanning");
+    if (verbose) fprintf(stdout, "Scanning\n");
 
     int found_device = 0;
     for (int i = 0; i < probes; i++) {
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
         bytes = sendto(sd, pkt_output, strlen(pkt_output) + 1, 0,
             (struct sockaddr *)&sa_remote, sizeof(struct sockaddr_in));
         if (bytes < 0) {
-            fprintf(stderr, "Error writing packet: %s\n", strerror(errno));
+            fprintf(stdout, "Error writing packet: %s\n", strerror(errno));
         }
 
         sock_size = sizeof(struct sockaddr_in);
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
             (struct sockaddr *)&sa_remote, &sock_size);
         if (bytes < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                fprintf(stderr, "Error reading packet: %s\n", strerror(errno));
+                fprintf(stdout, "Error reading packet: %s\n", strerror(errno));
                 return _EXIT_SOCKET;
             }
         }
@@ -445,38 +445,38 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (verbose) fputc('.', stderr);
+        if (verbose) fputc('.', stdout);
     }
 
-    if (verbose) fputc('\r', stderr);
+    if (verbose) fputc('\r', stdout);
 
     if (!found_device) {
-        fprintf(stderr, "No device found.\n");
+        fprintf(stdout, "Device not found\n");
         return _EXIT_DEVNOTFOUND;
     }
     else {
-        fprintf(stderr, "Device found");
+        //fprintf(stdout, "Device found");
         if (verbose) {
-            fprintf(stderr, ": %s [%s/%s]",
-                reply->host_name, reply->host_type, reply->host_id);
+            //fprintf(stdout, "Playing: %s [%s/%s]",
+            //    reply->host_name, reply->host_type, reply->host_id);
             switch (reply->code) {
             case 200:
                 if (reply->running_app_name != NULL) {
-                    fprintf(stderr, ": %s (%s)",
+                    fprintf(stdout, "Playing: %s (%s)",
                         reply->running_app_name, reply->running_app_titleid);
                 }
-                else fprintf(stderr, ": Home Screen");
+                else fprintf(stdout, "Home Screen");
                 break;
             case 620:
-                fprintf(stderr, ": Standby");
+                fprintf(stdout, "Sleep mode");
                 break;
             default:
-                fprintf(stderr, ": Unknown status (%hd)", reply->code);
+                fprintf(stdout, "Unknown status (%hd)", reply->code);
                 break;
             }
         }
-        else fputc('.', stderr);
-        fputc('\n', stderr);
+        else fputc('.', stdout);
+        fputc('\n', stdout);
 
         if (probe && json) json_output(reply);
     }
@@ -494,13 +494,13 @@ int main(int argc, char *argv[])
         "device-discovery-protocol-version:%s\n",
         _DDP_CLIENTTYPE, _DDP_AUTHTYPE, _DDP_MODEL, _DDP_APPTYPE, cred, _DDP_VERSION);
 
-    if (verbose) fprintf(stderr, "Sending wake-up...\n");
+    if (verbose) fprintf(stdout, "Sending wake-up...\n");
 
     sa_remote.sin_port = htons(port_remote);
     bytes = sendto(sd, pkt_output, strlen(pkt_output), 0,
         (struct sockaddr *)&sa_remote, sizeof(struct sockaddr_in));
     if (bytes < 0) {
-        fprintf(stderr, "Error writing packet: %s\n", strerror(errno));
+        fprintf(stdout, "Error writing packet: %s\n", strerror(errno));
         return _EXIT_SOCKET;
     }
 
